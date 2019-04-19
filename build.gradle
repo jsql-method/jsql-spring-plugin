@@ -1,8 +1,6 @@
 apply plugin: "java"
-apply plugin: 'eclipse'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
-apply plugin: "com.jfrog.artifactory"
 
 group = "it.jsql.connector.spring"
 //version = '1.0.3' //Release
@@ -11,42 +9,21 @@ version = '0.0.4-dev' //Dev
 buildscript {
     repositories {
         maven {
-            url "${artifactory_releaseUrl}"
-            credentials {
-                username = "${artifactory_user}"
-                password = "${artifactory_password}"
-            }
+            url "${artifactory_url}"
         }
 
-    }
-    dependencies {
-        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4+"
     }
 }
 
-artifactory {
-    contextUrl = "${artifactory_contextUrl}"   //The base Artifactory URL if not overridden by the publisher/resolver
-    publish {
-        repository {
-            repoKey = 'libs-release-local'
-            username = "${artifactory_user}"
-            password = "${artifactory_password}"
-            maven = true
-        }
-        defaults {
-            publications('mavenJava')
-            publishArtifacts = true
-            properties = ['qa.level': 'basic', 'dev.team' : 'core']
-            publishPom = true
-        }
-    }
-    resolve {
-        repository {
-            repoKey = 'libs-release'
-            username = "${artifactory_user}"
-            password = "${artifactory_password}"
-            maven = true
-
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "${artifactory_url}") {
+                authentication(userName: artifactory_user, password: artifactory_password)
+            }
+            pom.version = "1.2-dev"
+            pom.artifactId = "spring-plugin"
+            pom.groupId = "jsql"
         }
     }
 }
@@ -59,29 +36,24 @@ publishing {
     }
 }
 
-artifactoryPublish {
-    dependsOn jar
+jar {
+    baseName = 'jsql-spring-plugin'
+    version = "1.0"
+    doLast {
+        copy {
+            from "build/libs"
+            into "deploy"
+            include "*.jar"
+        }
+    }
 }
 
 repositories {
 
     mavenLocal()
-    mavenCentral()
 
     maven {
         url "https://plugins.gradle.org/m2/"
-    }
-}
-
-jar {
-    baseName = 'jsql-spring-plugin'
-    version = version
-    doLast {
-        copy {
-            from "build/libs"
-            into "${deployDir}"
-            include "*.jar"
-        }
     }
 }
 
