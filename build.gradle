@@ -3,15 +3,12 @@ apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
 group = "it.jsql.connector.spring"
-//version = '1.0.3' //Release
-version = '0.0.4-dev' //Dev
 
 buildscript {
     repositories {
         maven {
             url "${artifactory_url}"
         }
-
     }
 }
 
@@ -21,7 +18,7 @@ uploadArchives {
             repository(url: "${artifactory_url}") {
                 authentication(userName: artifactory_user, password: artifactory_password)
             }
-            pom.version = "1.2-dev"
+            pom.version = "1.3"
             pom.artifactId = "spring-plugin"
             pom.groupId = "jsql"
         }
@@ -38,7 +35,6 @@ publishing {
 
 jar {
     baseName = 'jsql-spring-plugin'
-    version = "1.0"
     doLast {
         copy {
             from "build/libs"
@@ -60,19 +56,15 @@ repositories {
 
 dependencies {
 
-    compile "org.springframework:spring-webmvc:4.1.6.RELEASE",
-            "org.springframework:spring-core:4.1.6.RELEASE",
-            "org.springframework:spring-web:4.1.6.RELEASE",
-            "org.springframework:spring-beans:4.1.6.RELEASE",
-            "org.springframework:spring-context:4.1.6.RELEASE"
+    compile group: 'org.springframework', name: 'spring-web', version: '5.1.7.RELEASE'
+    compile group: 'org.springframework', name: 'spring-core', version: '5.1.5.RELEASE'
+    compile group: 'org.springframework', name: 'spring-beans', version: '5.1.7.RELEASE'
+    compile group: 'org.springframework', name: 'spring-context', version: '5.1.7.RELEASE'
 
-    compile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final",
-            "org.hibernate:hibernate-entitymanager:4.3.10.Final",
-            "org.hibernate:hibernate-validator:5.1.3.Final",
-            'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.5.3',
-            'commons-codec:commons-codec:1.11',
-            'org.apache.httpcomponents:fluent-hc:4.5.6',
-            'com.google.code.gson:gson:2.8.5'
+    compile 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.5.3'
+    compile 'commons-codec:commons-codec:1.11'
+    compile 'org.apache.httpcomponents:fluent-hc:4.5.6'
+    compile 'com.google.code.gson:gson:2.8.5'
 
     compile 'javax:javaee-api:7.0'
 

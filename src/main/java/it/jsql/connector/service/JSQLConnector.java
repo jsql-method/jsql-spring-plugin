@@ -1,153 +1,103 @@
 package it.jsql.connector.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import it.jsql.connector.dto.HashQueryPair;
-import it.jsql.connector.exceptions.ErrorMessagesSingleton;
+import com.google.gson.Gson;
+import it.jsql.connector.dto.JSQLConfig;
 import it.jsql.connector.exceptions.JSQLException;
 
 import java.io.BufferedReader;
-import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
-/**
- * Created by Dawid on 2016-09-13.
- * Modified by Michael on 2018-09-10.
- */
-class JSQLConnector {
+public class JSQLConnector {
 
-    protected Boolean isMock = false;
+    private static final String API_URL = "https://provider.jsql.it";
 
-    //protected String host = "http://localhost:9191/";
-    protected String host = "http://softwarecartoon.com:9391/";
-    protected String requestQueriesPath = "api/request/queries";
-
-    private String apiKey = null;
-    private String memberKey = null;
-
-    public JSQLConnector() {
+    public static String callSelect(Object data, JSQLConfig jsqlConfig) throws JSQLException {
+        return call(API_URL + "/select", data, jsqlConfig);
     }
 
-    public JSQLConnector(String apiKey, String memberKey) {
-        this.setApiKey(apiKey);
-        this.setMemberKey(memberKey);
+    public static String callDelete(Object data, JSQLConfig jsqlConfig) throws JSQLException {
+        return call(API_URL + "/delete", data, jsqlConfig);
     }
 
-    public String getRequestQueriesPath() {
-        return requestQueriesPath;
+    public static String callUpdate(Object data, JSQLConfig jsqlConfig) throws JSQLException {
+        return call(API_URL + "/update", data, jsqlConfig);
     }
 
-    public String getHost() {
-        return host;
+    public static String callInsert(Object data, JSQLConfig jsqlConfig) throws JSQLException {
+        return call(API_URL + "/insert", data, jsqlConfig);
     }
 
-    public String getApiKey() throws JSQLException {
-
-        if (this.apiKey == null) {
-            throw new JSQLException("No apiKey defined");
-        }
-
-        return apiKey;
-
+    public static String callRollback(Object data, JSQLConfig jsqlConfig) throws JSQLException {
+        return call(API_URL + "/rollback", data, jsqlConfig);
     }
 
-    public String getMemberKey() throws JSQLException {
-        if (this.memberKey == null) {
-            throw new JSQLException("No member key defined");
-        }
-        return memberKey;
+    public static String callCommit(Object data, JSQLConfig jsqlConfig) throws JSQLException {
+        return call(API_URL + "/commit", data, jsqlConfig);
     }
+    public static String call(String fullUrl, Object request, JSQLConfig jsqlConfig) throws JSQLException {
 
-    public void setMemberKey(String memberKey) {
-        this.memberKey = memberKey;
-    }
+        HttpURLConnection conn = null;
 
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
-
-    public List<HashQueryPair> requestQueries(List<String> hashesList) throws JSQLException {
-
-        System.out.println("requestQueries apiKey " + this.getApiKey());
-
-        if (isMock) {
-
-            List<HashQueryPair> mockResponse = new ArrayList<>();
-
-            for (String hash : hashesList) {
-                mockResponse.add(new HashQueryPair(hash, "select * from users"));
-            }
-
-            return mockResponse;
-
-        } else {
-
-            System.out.println("size: "+hashesList.size());
-
-            return this.call(this.buildJSONRequest(hashesList), hashesList.size() > 1);
-        }
-
-    }
-
-    protected String buildJSONRequest(List<String> hashesList) {
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append("[");
-
-        for (int i = 0; i < hashesList.size(); i++) {
-            stringBuilder.append("\"" + hashesList.get(i) + "\"");
-            if (i != hashesList.size() - 1) {
-                stringBuilder.append(",");
-            }
-        }
-
-        stringBuilder.append("]");
-
-        return stringBuilder.toString();
-
-    }
-
-
-    protected List<HashQueryPair> call(String request, Boolean isGrouped) {
-        String fullUrl = this.getHost() + this.getRequestQueriesPath();
-
-
-        System.out.println("request : "+request);
-
-        if (isGrouped)
-            fullUrl += "/grouped";
         try {
 
             URL url = new URL(fullUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpURLConnection) url.openConnection();
+
             conn.setDoOutput(true);
+            conn.setDoInput(true);
+
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("ApiKey", this.getApiKey());
-            conn.setRequestProperty("MemberKey", this.getMemberKey());
+            conn.setRequestProperty("Api-Key", jsqlConfig.getApiKey());
+            conn.setRequestProperty("Dev-Key", jsqlConfig.getDevKey());
+            conn.setUseCaches(false);
+
 
             OutputStream os = conn.getOutputStream();
-            os.write(request.getBytes());
+
+            if(request != null){
+                os.write(new Gson().toJson(request).getBytes());
+            }
+
+            System.out.println("request: " + new Gson().toJson(request));
+
             os.flush();
 
+
+            System.out.println("fullUrl: " + fullUrl);
+            System.out.println("conn.getResponseCode(): " + conn.getResponseCode());
+
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+
+                System.out.println("conn: " + conn);
+
+                System.out.println("conn.getErrorStream(): " + conn.getErrorStream());
+
+                InputStream inputStream = conn.getErrorStream();
+
+                if (inputStream == null) {
+                    conn.disconnect();
+                    throw new JSQLException("HTTP error code : " + conn.getResponseCode());
+                }
+
                 BufferedReader br = new BufferedReader(new InputStreamReader((conn.getErrorStream())));
                 StringBuilder builder = new StringBuilder();
                 while (br.ready()) {
                     builder.append(br.readLine());
                 }
+
                 conn.disconnect();
 
-                String response = builder.toString();
-                response = response.substring(response.lastIndexOf("</div><div>") + 11, response.lastIndexOf("</div></body></html>"));
-                ErrorMessagesSingleton.getInstance().setMessage(response);
+                String response = builder.toString().trim();
+
+                if (response.length() > 0 && response.contains("<div>")) {
+                    response = response.substring(response.lastIndexOf("</div><div>") + 11, response.lastIndexOf("</div></body></html>"));
+                }
+
                 throw new JSQLException("HTTP error code : " + conn.getResponseCode() + "\nHTTP error message : " + response);
             }
 
@@ -161,29 +111,19 @@ class JSQLConnector {
 
             conn.disconnect();
 
-            String responseJSON = builder.toString();
+            return builder.toString();
 
-            if (!responseJSON.isEmpty()) {
-                List<HashQueryPair> response = Arrays.asList(new ObjectMapper().readValue(responseJSON, HashQueryPair[].class));
-                return response;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new JSQLException("IOException JSQLConnector.call: " + e.getMessage());
+        } finally {
+
+            if (conn != null) {
+                conn.disconnect();
             }
 
-
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            if (e.getMessage() != null)
-                ErrorMessagesSingleton.getInstance().setMessage(e.getMessage());
-        } catch (IOException e) {
-            e.printStackTrace();
-            if (e.getMessage() != null)
-                ErrorMessagesSingleton.getInstance().setMessage(e.getMessage());
-        } catch (JSQLException e) {
-            e.printStackTrace();
-            if (e.getMessage() != null)
-                ErrorMessagesSingleton.getInstance().setMessage(e.getMessage());
         }
-
-        return null;
 
     }
 

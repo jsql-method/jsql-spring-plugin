@@ -11,7 +11,7 @@ public class JSQLException extends Exception {
     }
 
     public JSQLException(String message){
-        super("jSQL: "+message);
+        super("JSQL: "+message);
     }
 
 }
