@@ -1,6 +1,8 @@
 package it.jsql.connector.controller;
 
+import com.google.gson.Gson;
 import it.jsql.connector.dto.JSQLConfig;
+import it.jsql.connector.dto.JSQLResponse;
 import it.jsql.connector.exceptions.JSQLException;
 import it.jsql.connector.service.JSQLConnector;
 import org.springframework.http.HttpStatus;
@@ -24,36 +26,82 @@ public abstract class JSQLController {
 
     public abstract JSQLConfig getConfig();
 
-    private final String TRANSACTION_ID = "txid";
+    private static final String API_URL = "https://provider.jsql.it/api/jsql";
 
-    @PostMapping("/select")
+    public String getProviderUrl() {
+        return API_URL;
+    }
+
+    public static final String TRANSACTION_ID = "txid";
+
+    @PostMapping(value = "/select", produces = "application/json", consumes = "application/json")
     public ResponseEntity select(@RequestBody Map<String, Object> data, @RequestHeader(value = TRANSACTION_ID, required = false) String transactionId, HttpServletResponse response) throws JSQLException {
-        return new ResponseEntity<>(JSQLConnector.callSelect(data, this.getConfig()), HttpStatus.OK);
+
+        JSQLResponse jsqlResponse = JSQLConnector.callSelect(transactionId, this.getProviderUrl(), data, this.getConfig());
+
+        if(jsqlResponse.transactionId != null){
+            response.setHeader(TRANSACTION_ID, jsqlResponse.transactionId);
+        }
+
+        System.out.println("jsqlResponse : "+new Gson().toJson(jsqlResponse));
+
+        return new ResponseEntity<>(jsqlResponse.response, HttpStatus.OK);
     }
 
-    @PostMapping("/delete")
+    @PostMapping(value = "/delete", produces = "application/json", consumes = "application/json")
     public ResponseEntity delete(@RequestBody Map<String, Object> data, @RequestHeader(value = TRANSACTION_ID, required = false) String transactionId, HttpServletResponse response) throws JSQLException {
-        return new ResponseEntity<>(JSQLConnector.callSelect(data, this.getConfig()), HttpStatus.OK);
+
+
+        JSQLResponse jsqlResponse = JSQLConnector.callDelete(transactionId, this.getProviderUrl(), data, this.getConfig());
+
+        if(jsqlResponse.transactionId != null){
+            response.setHeader(TRANSACTION_ID, jsqlResponse.transactionId);
+        }
+
+        return new ResponseEntity<>(jsqlResponse.response, HttpStatus.OK);
+
     }
 
-    @PostMapping("/update")
+    @PostMapping(value = "/update", produces = "application/json", consumes = "application/json")
     public ResponseEntity update(@RequestBody Map<String, Object> data, @RequestHeader(value = TRANSACTION_ID, required = false) String transactionId, HttpServletResponse response) throws JSQLException {
-        return new ResponseEntity<>(JSQLConnector.callSelect(data, this.getConfig()), HttpStatus.OK);
+
+        JSQLResponse jsqlResponse = JSQLConnector.callUpdate(transactionId, this.getProviderUrl(), data, this.getConfig());
+
+        if(jsqlResponse.transactionId != null){
+            response.setHeader(TRANSACTION_ID, jsqlResponse.transactionId);
+        }
+
+        return new ResponseEntity<>(jsqlResponse.response, HttpStatus.OK);
+
     }
 
-    @PostMapping("/insert")
+    @PostMapping(value = "/insert", produces = "application/json", consumes = "application/json")
     public ResponseEntity insert(@RequestBody Map<String, Object> data, @RequestHeader(value = TRANSACTION_ID, required = false) String transactionId, HttpServletResponse response) throws JSQLException {
-        return new ResponseEntity<>(JSQLConnector.callSelect(data, this.getConfig()), HttpStatus.OK);
+
+        JSQLResponse jsqlResponse = JSQLConnector.callInsert(transactionId, this.getProviderUrl(), data, this.getConfig());
+
+        if(jsqlResponse.transactionId != null){
+            response.setHeader(TRANSACTION_ID, jsqlResponse.transactionId);
+        }
+
+        return new ResponseEntity<>(jsqlResponse.response, HttpStatus.OK);
+
     }
 
-    @PostMapping("/rollback")
+    @PostMapping(value = "/rollback", produces = "application/json", consumes = "application/json")
     public ResponseEntity rollback(@RequestHeader(TRANSACTION_ID) String transactionId) throws JSQLException {
-        return new ResponseEntity<>(JSQLConnector.callRollback(transactionId, this.getConfig()), HttpStatus.OK);
+
+        JSQLResponse jsqlResponse = JSQLConnector.callRollback(this.getProviderUrl(), transactionId, this.getConfig());
+        return new ResponseEntity<>(jsqlResponse.response, HttpStatus.OK);
+
     }
 
-    @PostMapping("/commit")
+    @PostMapping(value = "/commit", produces = "application/json", consumes = "application/json")
     public ResponseEntity commit(@RequestHeader(TRANSACTION_ID) String transactionId) throws JSQLException {
-        return new ResponseEntity<>(JSQLConnector.callCommit(transactionId, this.getConfig()), HttpStatus.OK);
+
+        JSQLResponse jsqlResponse = JSQLConnector.callCommit(this.getProviderUrl(), transactionId, this.getConfig());
+        return new ResponseEntity<>(jsqlResponse.response, HttpStatus.OK);
+
     }
 
 }
