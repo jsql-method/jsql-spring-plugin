@@ -13,7 +13,7 @@ import java.net.URL;
 
 public class JSQLConnector {
 
-    private static final String API_URL = "https://provider.jsql.it";
+    private static final String API_URL = "https://provider.jsql.it/api/jsql";
 
     public static String callSelect(Object data, JSQLConfig jsqlConfig) throws JSQLException {
         return call(API_URL + "/select", data, jsqlConfig);
@@ -56,7 +56,6 @@ public class JSQLConnector {
             conn.setRequestProperty("Dev-Key", jsqlConfig.getDevKey());
             conn.setUseCaches(false);
 
-
             OutputStream os = conn.getOutputStream();
 
             if(request != null){
@@ -66,7 +65,6 @@ public class JSQLConnector {
             System.out.println("request: " + new Gson().toJson(request));
 
             os.flush();
-
 
             System.out.println("fullUrl: " + fullUrl);
             System.out.println("conn.getResponseCode(): " + conn.getResponseCode());
