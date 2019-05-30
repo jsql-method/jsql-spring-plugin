@@ -6,10 +6,7 @@ import it.jsql.connector.dto.JSQLConfig;
 import it.jsql.connector.dto.JSQLResponse;
 import it.jsql.connector.exceptions.JSQLException;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
@@ -56,6 +53,7 @@ public class JSQLConnector {
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Api-Key", jsqlConfig.getApiKey());
             conn.setRequestProperty("Dev-Key", jsqlConfig.getDevKey());
+            conn.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 4.01; Windows NT)");
 
             if(transactionId != null){
                 conn.setRequestProperty(JSQLController.TRANSACTION_ID, transactionId);
@@ -67,9 +65,7 @@ public class JSQLConnector {
 
             if(request != null){
                 os.write(new Gson().toJson(request).getBytes());
-
                 System.out.println("request: " + new Gson().toJson(request));
-
             }
 
             os.flush();
@@ -108,17 +104,19 @@ public class JSQLConnector {
                 throw new JSQLException("HTTP error code : " + conn.getResponseCode() + "\nHTTP error message : " + response);
             }
 
-            BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+//            BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+//
+//            StringBuilder builder = new StringBuilder();
+//
+//            while (br.ready()) {
+//                builder.append(br.readLine());
+//            }
 
-            StringBuilder builder = new StringBuilder();
-
-            while (br.ready()) {
-                builder.append(br.readLine());
-            }
+            String response = readInputStreamToString(conn);
 
             conn.disconnect();
 
-            String response = builder.toString();
+          //  String response = builder.toString();
 
             System.out.println("response: "+response);
 
@@ -141,6 +139,38 @@ public class JSQLConnector {
         }
 
 
+    }
+
+    private static String readInputStreamToString(HttpURLConnection connection) {
+        String result = null;
+        StringBuffer sb = new StringBuffer();
+        InputStream is = null;
+
+        try {
+            is = new BufferedInputStream(connection.getInputStream());
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            String inputLine = "";
+            while ((inputLine = br.readLine()) != null) {
+                sb.append(inputLine);
+            }
+            result = sb.toString();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            result = null;
+        }
+        finally {
+            if (is != null) {
+                try {
+                    is.close();
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return result;
     }
 
 }
