@@ -43,8 +43,6 @@ public abstract class JSQLController {
             response.setHeader(TRANSACTION_ID, jsqlResponse.transactionId);
         }
 
-        System.out.println("jsqlResponse : "+new Gson().toJson(jsqlResponse));
-
         return new ResponseEntity<>(jsqlResponse.response, HttpStatus.OK);
     }
 
