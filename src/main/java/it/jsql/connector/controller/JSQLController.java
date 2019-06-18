@@ -26,10 +26,20 @@ public abstract class JSQLController {
 
     public abstract JSQLConfig getConfig();
 
-    private static final String API_URL = "https://provider.jsql.it/api/jsql";
+    private static String SERVER_URL = "https://provider.jsql.it";
+    private static String PORT = "";
+    private static final String API_URL = "/api/jsql";
+
+    public String getServerUrl() {
+        return SERVER_URL;
+    }
+
+    public String getServerPort(){
+        return PORT;
+    }
 
     public String getProviderUrl() {
-        return API_URL;
+        return getServerUrl() + getServerPort() + API_URL;
     }
 
     public static final String TRANSACTION_ID = "txid";

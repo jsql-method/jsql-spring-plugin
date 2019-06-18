@@ -18,7 +18,7 @@ uploadArchives {
             repository(url: "${artifactory_url}") {
                 authentication(userName: artifactory_user, password: artifactory_password)
             }
-            pom.version = "1.5.7"
+            pom.version = "1.5.9"
             pom.artifactId = "spring-plugin"
             pom.groupId = "jsql"
         }
